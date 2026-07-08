@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Huffman Coding — Chương trình nén dữ liệu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page-bg:#191c22;
+    --card-bg:#15181e;
+    --panel-bg:#1b1f27;
+    --border:#2a2f3a;
+    --text:#e6e9ee;
+    --text-muted:#8a93a3;
+    --accent:#4f8ef7;
+    --accent-soft:rgba(79,142,247,0.12);
+    --success:#34d399;
+    --success-soft:rgba(52,211,153,0.14);
+    --danger:#f87171;
+    --radius:12px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--page-bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', 'Consolas', monospace;
+    min-height:100vh;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:3rem 1rem;
+  }
+
+  /* ================= KHUNG TERMINAL CHINH ================= */
+  .terminal{
+    width:100%; max-width:660px;
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:1.75rem;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+
+  /* ================= TIEU DE ================= */
+  .title-box{
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:0.85rem 1rem;
+    text-align:center;
+    color:var(--accent);
+    font-weight:600;
+    font-size:13.5px;
+    letter-spacing:0.04em;
+    margin-bottom:1.5rem;
+    background:var(--accent-soft);
+  }
+
+  /* ================= MENU 2x2 ================= */
+  .menu-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-bottom:1.1rem;
+  }
+  .menu-btn{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel-bg); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px;
+    color:var(--text); font-family:inherit; font-size:13px;
+    cursor:pointer; text-align:left;
+    transition:border-color .15s ease, transform .1s ease, background .15s ease;
+  }
+  .menu-btn:hover{ border-color:var(--accent); transform:translateY(-1px); }
+  .menu-btn.selected{ border-color:var(--accent); background:var(--accent-soft); }
+  .menu-btn svg{ width:16px; height:16px; flex-shrink:0; }
+  .menu-btn.icon-blue svg{ color:var(--accent); }
+  .menu-btn.icon-red svg{ color:var(--danger); }
+  .menu-btn b{ color:var(--text-muted); font-weight:600; margin-right:2px; }
+
+  .choice-line{
+    color:var(--text-muted); font-size:13px; margin-bottom:0.9rem;
+  }
+  .choice-line span{ color:var(--accent); font-weight:600; }
+  .divider{ border:none; border-top:1px solid var(--border); margin-bottom:1.4rem; }
+
+  /* ================= INPUT DONG (an/hien theo menu) ================= */
+  .input-zone{ display:none; margin:-0.4rem 0 1.4rem; }
+  .input-zone.active{ display:block; }
+  textarea{
+    width:100%; min-height:80px; resize:vertical;
+    background:var(--panel-bg); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:inherit; font-size:12.5px;
+    padding:0.7rem; line-height:1.6;
+  }
+  textarea:focus{ outline:none; border-color:var(--accent); }
+
+  .file-drop{
+    border:1.5px dashed var(--border); border-radius:8px;
+    padding:1.3rem; text-align:center; cursor:pointer;
+    color:var(--text-muted); font-size:12.5px;
+    transition:border-color .15s ease;
+  }
+  .file-drop:hover{ border-color:var(--accent); }
+  #fileInput{ display:none; }
+  #fileName{ margin-top:8px; color:var(--success); font-size:12px; }
+
+  .sample-list{ display:flex; flex-direction:column; gap:6px; }
+  .sample-item{
+    background:var(--panel-bg); border:1px solid var(--border); border-radius:8px;
+    padding:9px 12px; cursor:pointer; font-size:12.5px; color:var(--text);
+    transition:border-color .15s ease;
+  }
+  .sample-item:hover{ border-color:var(--accent); }
+  .sample-item .d{ color:var(--text-muted); font-size:11.5px; margin-top:2px; }
+
+  .mini-btn{
+    margin-top:0.7rem; background:var(--accent); color:#fff; border:none;
+    border-radius:7px; padding:8px 16px; font-family:inherit; font-size:12.5px;
+    font-weight:600; cursor:pointer;
+  }
+  .mini-btn:hover{ background:#3b7ae4; }
+
+  /* ================= KET QUA ================= */
+  #results{ display:none; }
+  .result-block + .result-block{ margin-top:1.8rem; padding-top:1.6rem; border-top:1px dashed var(--border); }
+
+  .dataset-label{
+    display:flex; align-items:center; gap:7px;
+    color:var(--text-muted); font-size:13px; margin-bottom:1rem;
+  }
+  .dataset-label svg{ width:14px; height:14px; }
+  .dataset-label b{ color:var(--text); font-weight:600; }
+
+  .chart-title{ color:var(--text-muted); font-size:12px; margin-bottom:0.6rem; }
+  .freq-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .freq-char{ width:14px; color:var(--text); font-size:12.5px; flex-shrink:0; }
+  .freq-track{ flex:1; height:14px; background:#0e1015; border-radius:3px; overflow:hidden; }
+  .freq-fill{ height:100%; background:var(--accent); width:0%; transition:width .6s ease; }
+  .freq-val{ width:24px; text-align:right; color:var(--text-muted); font-size:11.5px; }
+
+  table{ width:100%; border-collapse:collapse; margin-top:1.1rem; font-size:12.5px; }
+  thead th{
+    text-align:left; color:var(--text-muted); font-weight:500;
+    padding:0 0 8px; border-bottom:1px solid var(--border); font-size:12px;
+  }
+  tbody td{ padding:7px 0; border-bottom:1px solid rgba(42,47,58,0.5); color:var(--text); }
+  tbody tr:last-child td{ border-bottom:none; }
+  .code-cell{ color:var(--accent); font-weight:600; }
+
+  .check-row{
+    display:flex; align-items:center; gap:7px; margin-top:1rem;
+    color:var(--success); font-size:12.5px;
+  }
+  .check-row.fail{ color:var(--danger); }
+  .check-row svg{ width:14px; height:14px; }
+
+  .stats{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:1.1rem; }
+  .stat-card{
+    background:var(--panel-bg); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px;
+  }
+  .stat-card.highlight{ background:var(--success-soft); border-color:rgba(52,211,153,0.35); }
+  .stat-label{ font-size:10.5px; color:var(--text-muted); }
+  .stat-value{ font-size:16px; font-weight:700; margin-top:3px; color:var(--text); }
+  .stat-value small{ font-size:10.5px; color:var(--text-muted); font-weight:400; }
+  .stat-card.highlight .stat-value{ color:var(--success); }
+
+  .ratio-track{ height:9px; background:#0e1015; border-radius:5px; overflow:hidden; margin-top:1.1rem; }
+  .ratio-fill{ height:100%; width:0%; background:var(--success); border-radius:5px; transition:width 1s ease; }
+  .ratio-caption{ text-align:right; margin-top:5px; font-size:11.5px; color:var(--success); font-weight:600; }
+
+  @media (max-width:480px){
+    .menu-grid{ grid-template-columns:1fr; }
+    .stats{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="terminal">
+
+  <div class="title-box">HUFFMAN CODING &nbsp;–&nbsp; CHUONG TRINH NEN DU LIEU</div>
+
+  <div class="menu-grid">
+    <button class="menu-btn icon-blue" data-mode="manual">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 16h8"/></svg>
+      <span><b>[1]</b> Nhap chuoi tu ban phim</span>
+    </button>
+    <button class="menu-btn icon-blue" data-mode="file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      <span><b>[2]</b> Doc du lieu tu file .txt</span>
+    </button>
+    <button class="menu-btn icon-blue" data-mode="sample">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span><b>[3]</b> Chay bo du lieu mau</span>
+    </button>
+    <button class="menu-btn icon-red" data-mode="exit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <span><b>[0]</b> Thoat chuong trinh</span>
+    </button>
+  </div>
+
+  <div class="choice-line">Lua chon cua ban: <span id="choiceDisplay">—</span></div>
+  <hr class="divider">
+
+  <div class="input-zone" id="zone-manual">
+    <textarea id="manualInput" placeholder="Nhap chuoi can nen, vi du: aaaaaaaaaabbbbbbcccdd"></textarea>
+    <button class="mini-btn" onclick="runManual()">Nen ngay</button>
+  </div>
+
+  <div class="input-zone" id="zone-file">
+    <div class="file-drop" id="dropZone">Nhan de chon file .txt, hoac keo tha vao day</div>
+    <input type="file" id="fileInput" accept=".txt">
+    <div id="fileName"></div>
+  </div>
+
+  <div class="input-zone" id="zone-sample">
+    <div class="sample-list">
+      <div class="sample-item" onclick="runSampleAll()">
+        <b>Chay tat ca 4 bo du lieu mau</b>
+        <div class="d">lap lai nhieu / khong lap / cau tieng Anh / truong hop bien</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-zone" id="zone-exit">
+    <div class="check-row" style="color:var(--danger);">Cam on ban da su dung chuong trinh!</div>
+  </div>
+
+  <div id="results"></div>
+
+</div>
+
+<script>
+class HuffmanNode {
+  constructor(ch, freq, left = null, right = null) {
+    this.ch = ch; this.freq = freq; this.left = left; this.right = right;
+  }
+}
+class HuffmanCoding {
+  buildFrequencyTable(text) {
+    this.freqMap = {};
+    for (const c of text) this.freqMap[c] = (this.freqMap[c] || 0) + 1;
+  }
+  buildTree() {
+    let nodes = Object.entries(this.freqMap).map(([ch, freq]) => new HuffmanNode(ch, freq));
+    if (nodes.length === 0) { this.root = null; return; }
+    if (nodes.length === 1) { this.root = new HuffmanNode(null, nodes[0].freq, nodes[0], null); return; }
+    while (nodes.length > 1) {
+      nodes.sort((a, b) => a.freq - b.freq);
+      const left = nodes.shift(), right = nodes.shift();
+      nodes.push(new HuffmanNode(null, left.freq + right.freq, left, right));
+    }
+    this.root = nodes[0];
+  }
+  generateCodes() {
+    this.codes = {};
+    const walk = (node, code) => {
+      if (!node) return;
+      if (!node.left && !node.right) { this.codes[node.ch] = code === "" ? "0" : code; return; }
+      walk(node.left, code + "0"); walk(node.right, code + "1");
+    };
+    walk(this.root, "");
+  }
+  encode(text) { let out = ""; for (const c of text) out += this.codes[c]; return out; }
+  decode(encoded) {
+    let out = "", node = this.root;
+    for (const bit of encoded) {
+      node = bit === "0" ? node.left : node.right;
+      if (!node.left && !node.right) { out += node.ch; node = this.root; }
+    }
+    return out;
+  }
+  compressionRatio(original, encoded) {
+    const originalBits = original.length * 8, compressedBits = encoded.length;
+    if (originalBits === 0) return 0;
+    return 100 * (1 - compressedBits / originalBits);
+  }
+}
+
+const menuBtns = document.querySelectorAll('.menu-btn');
+const zones = ['manual', 'file', 'sample', 'exit'];
+
+menuBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    menuBtns.forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const mode = btn.dataset.mode;
+    document.getElementById('choiceDisplay').textContent =
+      mode === 'manual' ? '1' : mode === 'file' ? '2' : mode === 'sample' ? '3' : '0';
+
+    zones.forEach(z => document.getElementById('zone-' + z).classList.remove('active'));
+    document.getElementById('zone-' + mode).classList.add('active');
+
+    if (mode === 'exit') {
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('results').innerHTML = '';
+    }
+  });
+});
+
+function displayChar(c) {
+  if (c === ' ') return '[space]';
+  if (c === '\n') return '[newline]';
+  if (c === '\r') return '[CR]';
+  if (c === '\t') return '[tab]';
+  return c;
+}
+
+function processDataset(text, label) {
+  const huff = new HuffmanCoding();
+  huff.buildFrequencyTable(text);
+  huff.buildTree();
+  huff.generateCodes();
+  const encoded = huff.encode(text);
+  const decoded = huff.decode(encoded);
+  const ratio = huff.compressionRatio(text, encoded);
+  return buildResultBlockHTML(text, huff, encoded, decoded, ratio, label);
+}
+
+function buildResultBlockHTML(text, huff, encoded, decoded, ratio, label) {
+  const entries = Object.entries(huff.freqMap).sort((a, b) => b[1] - a[1]);
+  const maxFreq = entries[0][1];
+
+  let chartHTML = '';
+  entries.forEach(([ch, freq]) => {
+    const pct = Math.max(6, Math.round((freq / maxFreq) * 100));
+    chartHTML += `<div class="freq-row">
+      <div class="freq-char">${displayChar(ch)}</div>
+      <div class="freq-track"><div class="freq-fill" data-w="${pct}"></div></div>
+      <div class="freq-val">${freq}</div></div>`;
+  });
+
+  let tableHTML = '';
+  Object.keys(huff.codes).sort().forEach(ch => {
+    tableHTML += `<tr><td>${displayChar(ch)}</td><td>${huff.freqMap[ch]}</td><td class="code-cell">${huff.codes[ch]}</td></tr>`;
+  });
+
+  const ok = decoded === text;
+  const checkHTML = ok
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Kiem tra giai ma: dung khop voi ban goc`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Kiem tra giai ma: SAI LECH`;
+
+  const originalBits = text.length * 8;
+  const compressedBits = encoded.length;
+  const clamped = Math.min(100, Math.max(0, ratio));
+
+  return `
+  <div class="result-block">
+    <div class="dataset-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <b>${label}</b>
+    </div>
+    <div class="chart-title">Bieu do tan suat ky tu</div>
+    ${chartHTML}
+    <table>
+      <thead><tr><th>Ky tu</th><th>Tan suat</th><th>Ma Huffman</th></tr></thead>
+      <tbody>${tableHTML}</tbody>
+    </table>
+    <div class="check-row ${ok ? '' : 'fail'}">${checkHTML}</div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Kich thuoc goc</div><div class="stat-value">${originalBits} <small>bit</small></div></div>
+      <div class="stat-card"><div class="stat-label">Sau khi nen</div><div class="stat-value">${compressedBits} <small>bit</small></div></div>
+      <div class="stat-card highlight"><div class="stat-label">Ty le nen</div><div class="stat-value">${ratio.toFixed(2)}<small>%</small></div></div>
+    </div>
+    <div class="ratio-track"><div class="ratio-fill" data-w="${clamped}"></div></div>
+    <div class="ratio-caption">${ratio.toFixed(2)}%</div>
+  </div>`;
+}
+
+function animateFills(container) {
+  container.querySelectorAll('[data-w]').forEach(el => {
+    const w = el.dataset.w;
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = w + '%'; }));
+  });
+}
+
+function showResult(html) {
+  const results = document.getElementById('results');
+  results.style.display = 'block';
+  results.innerHTML = html;
+  animateFills(results);
+  results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function runManual() {
+  const text = document.getElementById('manualInput').value;
+  if (!text) { alert('Chua nhap du lieu!'); return; }
+  showResult(processDataset(text, 'Du lieu nhap tu ban phim'));
+}
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => e.preventDefault());
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const content = ev.target.result;
+    document.getElementById('fileName').textContent = `[OK] Da doc file: ${file.name} (${content.length} ky tu)`;
+    showResult(processDataset(content, 'Du lieu tu file: ' + file.name));
+  };
+  reader.readAsText(file);
+}
+
+function runSampleAll() {
+  const datasets = [
+    ['aaaaaaaaaabbbbbbcccdd', 'Bo du lieu 1 - chuoi lap lai nhieu ky tu'],
+    ['abcdefghijklmnopqrstuvwxyz', 'Bo du lieu 2 - chuoi khong lap ky tu'],
+    ['this is an example of a huffman tree', 'Bo du lieu 3 - cau tieng Anh mau'],
+    ['a'.repeat(500), 'Bo du lieu 4 - truong hop bien: 500 ky tu lap lai'],
+  ];
+  let html = '';
+  datasets.forEach(([text, label]) => { html += processDataset(text, label); });
+  showResult(html);
+}
+</script>
+</body>
+</html>
